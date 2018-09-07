@@ -1,4 +1,5 @@
-    stages {
+import groovy.json.JsonSlurperClassic    
+stages {
         stage ('Git Checkout') {
             steps {
                 echo 'Switch to drive'
