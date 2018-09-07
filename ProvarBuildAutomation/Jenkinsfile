@@ -1,5 +1,5 @@
    
-
+node {
         stage ('Git Checkout') {
             steps {
                 echo 'Switch to drive'
@@ -30,3 +30,4 @@
                 echo 'Creating installers for provar'
             }
         }
+}
