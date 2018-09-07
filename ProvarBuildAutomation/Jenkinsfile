@@ -1,3 +1,4 @@
+#!groovy
 node {
         stage ('Git Checkout') {
                 echo 'Switch to drive'
