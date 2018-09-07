@@ -1,5 +1,5 @@
-import groovy.json.JsonSlurperClassic    
-stages {
+   
+
         stage ('Git Checkout') {
             steps {
                 echo 'Switch to drive'
@@ -30,4 +30,3 @@ stages {
                 echo 'Creating installers for provar'
             }
         }
-    }
