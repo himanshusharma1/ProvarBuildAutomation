@@ -1,21 +1,24 @@
-node('Jenkins-Slave-1') {
+node{
+
         stage ('Git Checkout') {
+        
                 echo 'Switch to drive'
+                
                 echo 'check out ProvarSF from git'
-         }
+        }
         stage ('Update Versions') {
                 echo 'Updating versions'
-         }
+        }
         
         stage ('Run Tests') {
                 echo 'Running tests'
-         }
+        }
         
         stage ('Tyco Build') {
                 echo 'Building provar'
-         }
+        }
         
         stage ('Generate Installers') {
                 echo 'Creating installers for provar'
-         }
+        }
 }
