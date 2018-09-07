@@ -1,4 +1,4 @@
-node {
+node('Jenkins-Slave-1') {
         stage ('Git Checkout') {
                 echo 'Switch to drive'
                 echo 'check out ProvarSF from git'
