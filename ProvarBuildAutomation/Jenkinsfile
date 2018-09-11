@@ -17,16 +17,16 @@ node{
                         C:
                         cd C:/Users/Himanshu Sharma/Provar-Workspace-Oxygen/Provar
                         
-                        echo 'Resetting release branch'
-                        git reset --hard ${RELEASE_BRANCH}
+                        println 'Resetting release branch: ' + params.RELEASE_BRANCH
+                        
+                        git reset --hard params.RELEASE_BRANCH
                         
                         echo 'Pulling Provar repo'
-                        git pull "https://%USERNAME%:%PASSWORD%@github.com/pnoffke/Provar.git" ${RELEASE_BRANCH}
-                        echo 'Provar pull successful'
+                        git pull "https://%USERNAME%:%PASSWORD%@github.com/pnoffke/Provar.git" params.RELEASE_BRANCH
                         
                         echo 'Pulling ProvarSF repo'
-                        git pull "https://%USERNAME%:%PASSWORD%@github.com/pnoffke/ProvarSF.git" ${RELEASE_BRANCH}
-                        echo 'Provar pull successful'
+                        git pull "https://%USERNAME%:%PASSWORD%@github.com/pnoffke/ProvarSF.git" params.RELEASE_BRANCH
+                        
                         '''
                 }
         }
