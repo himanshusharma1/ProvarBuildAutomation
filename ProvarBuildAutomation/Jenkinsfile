@@ -1,11 +1,36 @@
 node{
 
-        stage ('Git Checkout') {
-        
-                echo 'Switch to drive'
-                
-                echo 'check out ProvarSF from git'
+        stage ('Generate Build Version') {
+                echo 'Generating Provar Version...'
+                env.BN = VersionNumber([
+                        versionNumberString :'${BUILD_MONTH}.${BUILDS_TODAY,XX}.${BUILDS_ALL_TIME,XX}', 
+                        projectStartDate : '2018-10-10', 
+                        versionPrefix : ''
+                ])
+                println 'Provar Build Version Created: ' + env.BN
         }
+        
+        stage ('Git Checkout') {
+                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ProvarGitCredentials',
+                    usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+                    bat '''
+                        C:
+                        cd C:/Users/Himanshu Sharma/Provar-Workspace-Oxygen/Provar
+                        
+                        echo 'Resetting release branch'
+                        git reset --hard ${RELEASE_BRANCH}
+                        
+                        echo 'Pulling Provar repo'
+                        git pull "https://%USERNAME%:%PASSWORD%@github.com/pnoffke/Provar.git" ${RELEASE_BRANCH}
+                        echo 'Provar pull successful'
+                        
+                        echo 'Pulling ProvarSF repo'
+                        git pull "https://%USERNAME%:%PASSWORD%@github.com/pnoffke/ProvarSF.git" ${RELEASE_BRANCH}
+                        echo 'Provar pull successful'
+                        '''
+                }
+        }
+        
         stage ('Update Versions') {
                 echo 'Updating versions'
         }
