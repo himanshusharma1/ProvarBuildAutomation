@@ -3,7 +3,7 @@ node{
         stage ('Generate Build Version') {
                 echo 'Generating Provar Version...'
                 env.BN = VersionNumber([
-                        versionNumberString :'${BUILD_MONTH}.${BUILDS_TODAY,XX}.${BUILDS_ALL_TIME,XX}', 
+                        versionNumberString :'${VERSION_PREFIX}.${BUILD_MONTH}.${BUILDS_ALL_TIME,XX}', 
                         projectStartDate : '2018-10-10', 
                         versionPrefix : ''
                 ])
