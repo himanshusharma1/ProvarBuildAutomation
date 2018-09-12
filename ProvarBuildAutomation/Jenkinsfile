@@ -45,7 +45,7 @@ node{
                         eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM.APIS% -Dforcedotcom.ui=%FORCEDOTCOM.UI% -Dforcedotcom.feature=%FORCEDOTCOM.FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-build-automation.xml update-versions-pom
                         eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM.APIS% -Dforcedotcom.ui=%FORCEDOTCOM.UI% -Dforcedotcom.feature=%FORCEDOTCOM.FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-build-automation.xml update-versions-manifest
                         
-                        eclipsec.exe -nosplash -clean -application org.eclipse.cdt.managedbuilder.core.headlessbuild --launcher.suppressErrors -data "C:/Provar-Workspace" -cleanBuild all
+                        
                         
                 '''
         }
@@ -56,6 +56,11 @@ node{
         
         stage ('Tyco Build') {
                 echo 'Building provar'
+                bat '''
+                        C:
+                        cd C:/Users/Administrator/git/Provar/Java/com.provar.build
+                        mvn clean install -Declipse.install.loc=C:/eclipse-oxygen-64-4.7.1a
+                '''
         }
         
         stage ('Generate Installers') {
