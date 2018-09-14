@@ -41,9 +41,9 @@ node{
                         C:
                         cd C:/eclipse-oxygen-64-4.7.1a
                         
-                        eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM.APIS% -Dforcedotcom.ui=%FORCEDOTCOM.UI% -Dforcedotcom.feature=%FORCEDOTCOM.FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-build-automation.xml update-build-version
-                        eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM.APIS% -Dforcedotcom.ui=%FORCEDOTCOM.UI% -Dforcedotcom.feature=%FORCEDOTCOM.FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-build-automation.xml update-versions-pom
-                        eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM.APIS% -Dforcedotcom.ui=%FORCEDOTCOM.UI% -Dforcedotcom.feature=%FORCEDOTCOM.FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-build-automation.xml update-versions-manifest
+                        eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM.APIS% -Dforcedotcom.ui=%FORCEDOTCOM.UI% -Dforcedotcom.feature=%FORCEDOTCOM.FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-version-update.xml update-build-version
+                        eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM.APIS% -Dforcedotcom.ui=%FORCEDOTCOM.UI% -Dforcedotcom.feature=%FORCEDOTCOM.FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-version-update.xml update-versions-pom
+                        eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM.APIS% -Dforcedotcom.ui=%FORCEDOTCOM.UI% -Dforcedotcom.feature=%FORCEDOTCOM.FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-version-update.xml update-versions-manifest
                         
                         
                         
