@@ -72,10 +72,9 @@ node{
                             [$class: 'StringParameterValue', name: 'provar.home', value: '%PROVAR.HOME%'],
                             [$class: 'StringParameterValue', name: 'testproject.home', tag: '%TESTPROJECT.HOME%'],
                             [$class: 'StringParameterValue', name: 'testproject.results', value: '%TESTPROJECT.RESULTS%'],
-                            [$class: 'StringParameterValue', name: 'ant-provar-jar', tag: '%ANT.PROVAR.JAR%'],
-                            [$class: 'StringParameterValue', name: 'ant-provar-bundled-jar', value: '%ANT.PROVAR.BUNDLED.JAR%']
-                            [$class: 'StringParameterValue', name: 'testproject.home', tag: '%TESTPROJECT.HOME%'],
-                            [$class: 'StringParameterValue', name: 'ant-provar-sf-jar', value: '%ANT.PROVAR.SF.JAR%']
+                            [$class: 'StringParameterValue', name: 'ant.provar.jar', tag: '%ANT.PROVAR.JAR%'],
+                            [$class: 'StringParameterValue', name: 'ant.provar.bundled.jar', value: '%ANT.PROVAR.BUNDLED.JAR%'],
+                            [$class: 'StringParameterValue', name: 'ant.provar.sf.jar', value: '%ANT.PROVAR.SF.JAR%']
                     ]
         }
         
