@@ -50,10 +50,6 @@ node{
                 '''
         }
         
-        stage ('Run Tests') {
-                echo 'Running tests'
-        }
-        
         stage ('Tyco Build') {
                 echo 'Building provar'
                 bat '''
@@ -63,6 +59,14 @@ node{
                 '''
         }
         
+        stage ('Run Tests') {
+                echo 'Running tests'
+                bat '''
+                        C:
+                        cd C:/UsersAdministrator/git/Provar/Chrome/com.provar.chrome.IDE
+                        npm test
+                '''
+        }
         stage ('Generate Installers') {
                 echo 'Creating installers for provar'
         }
