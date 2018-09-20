@@ -39,7 +39,7 @@ node{
                 echo 'Updating versions'
                 bat '''
                         C:
-                        cd C:/eclipse-oxygen-64-4.7.1a
+                        cd %ECLIPSE.LOCATION%
                         
                         eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM.APIS% -Dforcedotcom.ui=%FORCEDOTCOM.UI% -Dforcedotcom.feature=%FORCEDOTCOM.FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-version-update.xml update-build-version
                         eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM.APIS% -Dforcedotcom.ui=%FORCEDOTCOM.UI% -Dforcedotcom.feature=%FORCEDOTCOM.FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-version-update.xml update-versions-pom
@@ -62,7 +62,7 @@ node{
                 bat '''
                         C:
                         cd C:/Users/Administrator/git/Provar/Java/com.provar.build
-                        mvn clean install -Declipse.install.loc=C:/eclipse-oxygen-64-4.7.1a
+                        mvn clean install -Declipse.install.loc=%ECLIPSE.LOCATION%
                 '''
         }
         
@@ -80,5 +80,11 @@ node{
         
         stage ('Generate Installers') {
                 echo 'Creating installers for provar'
+                bat '''
+                        C:
+                        cd %NISI.COMPILER%
+                        makensis.exe C:/Users/Administrator/git/Installer/NSIS/provar_setup_win_x86_32.nsi
+                        makensis.exe C:/Users/Administrator/git/Installer/NSIS/provar_setup_win_x86_64.nsi
+                '''
         }
 }
