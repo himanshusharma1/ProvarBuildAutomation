@@ -49,7 +49,14 @@ node{
                         
                 '''
         }
-        
+        stage ('Run Tests') {
+                echo 'Running tests'
+                bat '''
+                        C:
+                        cd C:/UsersAdministrator/git/Provar/Chrome/com.provar.chrome.IDE
+                        npm test
+                '''
+        }
         stage ('Tyco Build') {
                 echo 'Building provar'
                 bat '''
@@ -59,14 +66,19 @@ node{
                 '''
         }
         
-        stage ('Run Tests') {
-                echo 'Running tests'
-                bat '''
-                        C:
-                        cd C:/UsersAdministrator/git/Provar/Chrome/com.provar.chrome.IDE
-                        npm test
-                '''
+        stage ('Trigger Smoke Test') {
+                build job: 'SmokeTest', 
+                    parameters: [
+                            [$class: 'StringParameterValue', name: 'provar.home', value: '%PROVAR.HOME%'],
+                            [$class: 'StringParameterValue', name: 'testproject.home', tag: '%TESTPROJECT.HOME%'],
+                            [$class: 'StringParameterValue', name: 'testproject.results', value: '%TESTPROJECT.RESULTS%'],
+                            [$class: 'StringParameterValue', name: 'ant-provar-jar', tag: '%ANT.PROVAR.JAR%'],
+                            [$class: 'StringParameterValue', name: 'ant-provar-bundled-jar', value: '%ANT.PROVAR.BUNDLED.JAR%']
+                            [$class: 'StringParameterValue', name: 'testproject.home', tag: '%TESTPROJECT.HOME%'],
+                            [$class: 'StringParameterValue', name: 'ant-provar-sf-jar', value: '%ANT.PROVAR.SF.JAR%']
+                    ]
         }
+        
         stage ('Generate Installers') {
                 echo 'Creating installers for provar'
         }
