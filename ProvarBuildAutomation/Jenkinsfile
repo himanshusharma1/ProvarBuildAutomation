@@ -53,7 +53,7 @@ node{
                 echo 'Running tests'
                 bat '''
                         C:
-                        cd C:/UsersAdministrator/git/Provar/Chrome/com.provar.chrome.IDE
+                        cd C:/Users/Administrator/git/Provar/Chrome/com.provar.chrome.IDE
                         npm test
                 '''
         }
