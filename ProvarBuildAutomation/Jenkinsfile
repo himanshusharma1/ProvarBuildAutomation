@@ -51,6 +51,8 @@ node{
                 '''
                 try {
                         bat '''
+                                C:
+                                cd %ECLIPSE.LOCATION%
                                 eclipsec.exe -nosplash -clean -application org.eclipse.cdt.managedbuilder.core.headlessbuild --launcher.suppressErrors -data "C:/Provar-Workspace" -cleanBuild all
                         '''
                 } catch (exc) {
