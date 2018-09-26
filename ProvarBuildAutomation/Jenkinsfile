@@ -56,17 +56,10 @@ node{
                                 eclipsec.exe -nosplash -clean -application org.eclipse.cdt.managedbuilder.core.headlessbuild --launcher.suppressErrors -data "C:/Provar-Workspace" -cleanBuild all
                         '''
                 } catch (exc) {
-                        echo 'continue'
+                        echo 'TODO: doing clean build in eclipse headless mode, via CDT plugin, build project successfully but throws exit code 1, this need to '
                 }
         }
-        stage ('Run Tests') {
-                echo 'Running tests'
-                bat '''
-                        C:
-                        cd C:/Users/Administrator/git/Provar/Chrome/com.provar.chrome.IDE
-                        npm test
-                '''
-        }
+       
         stage ('Tyco Build') {
                 echo 'Building provar'
                 bat '''
