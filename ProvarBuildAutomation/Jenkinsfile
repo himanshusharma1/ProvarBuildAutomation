@@ -37,6 +37,7 @@ node{
         
         stage ('Update Versions') {
                 echo 'Updating versions'
+                
                 bat '''
                         C:
                         cd %ECLIPSE.LOCATION%
@@ -48,6 +49,13 @@ node{
                         
                         
                 '''
+                try {
+                        bat '''
+                                eclipsec.exe -nosplash -clean -application org.eclipse.cdt.managedbuilder.core.headlessbuild --launcher.suppressErrors -data "C:/Provar-Workspace" -cleanBuild all
+                        '''
+                } catch (exc) {
+                        echo 'continue'
+                }
         }
         stage ('Run Tests') {
                 echo 'Running tests'
