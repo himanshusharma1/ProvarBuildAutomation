@@ -2,7 +2,7 @@ node{
 
         stage ('Generate Build Version') {
                 echo 'Generating Provar Version...{Major.Minor.Build.Revision}'
-                ${BUILDS_ALL_TIME} = '00'
+                BUILDS_ALL_TIME = '00'
                 env.BUILD_NUMBER = VersionNumber([
                         versionNumberString :'${MAJOR.MINOR.BUILD}.${BUILDS_ALL_TIME,XX}', 
                         projectStartDate : '2018-11-11', 
