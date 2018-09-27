@@ -5,6 +5,7 @@ node{
                 env.BUILD_NUMBER = VersionNumber([
                         versionNumberString :'${MAJOR.MINOR.BUILD}.${BUILDS_ALL_TIME,XX}', 
                         projectStartDate : '2018-11-11', 
+                        overrideBuildsAllTime: '00',
                         versionPrefix : ''
                 ])
                 println 'Provar Build Version Created: ' + env.BUILD_NUMBER
