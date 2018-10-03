@@ -87,7 +87,7 @@ node{
                         bat '''
                                 C:
                                 cd C:/Automation/origin/QA_Master
-                                git pull origin
+                                git pull https://%USERNAME%:%PASSWORD%@github.com/ProvarTesting/ProvarRegression.git origin
                         '''
                 }
                 
