@@ -1,18 +1,24 @@
 node{
 
         stage ('Generate Build Version') {
-                echo 'Generating Provar Version...{Major.Minor.Build.Revision}'
-                BUILDS_ALL_TIME = '00'
-                env.BUILD_NUMBER = VersionNumber([
-                        versionNumberString :'${MAJOR.MINOR.BUILD}.${BUILDS_ALL_TIME,XX}', 
-                        projectStartDate : '2018-11-11', 
-                        versionPrefix : ''
-                ])
+                println 'Generating Provar Version {Major.Minor.Build.Revision}'
+                // NEW_BUILDS_ALL_TIME WILL BE USED ONLY WHEN WE NEED TO RESET THE BUILD_ALL_TIME COUNTER.
+                // We will override the BUILDS_ALL_TIME variable by the value of environment-variable NEW_BUILDS_ALL_TIME;
+                // If NEW_BUILDS_ALL_TIME is not set it will not be overridden.
+                // As soon as first build is triggred, we need to remove NEW_BUILDS_ALL_TIME, else it will keep on overridding BUILDS_ALL_TIME
+                withEnv(['NEW_BUILDS_ALL_TIME=${NEW_BUILDS_ALL_TIME}']) {
+                        env.BUILD_NUMBER = VersionNumber([
+                                versionNumberString :'${MAJOR.MINOR.BUILD}.${BUILDS_ALL_TIME,XX}', 
+                                overrideBuildsAllTime : '${NEW_BUILDS_ALL_TIME}',
+                                projectStartDate : '2018-11-11'
+                        ])
+                }
+                
                 println 'Provar Build Version Created: ' + env.BUILD_NUMBER
         }
         
         stage ('Git Checkout') {
-                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ProvarGitCredentials',
+                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: '%PROVAR.GIT.CREDENTIALS%',
                     usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
                     bat '''
                         C:
@@ -37,8 +43,7 @@ node{
         }
         
         stage ('Update Versions') {
-                echo 'Updating versions'
-                
+                println 'Updating versions'
                 bat '''
                         C:
                         cd %ECLIPSE.LOCATION%
@@ -46,9 +51,6 @@ node{
                         eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM.APIS% -Dforcedotcom.ui=%FORCEDOTCOM.UI% -Dforcedotcom.feature=%FORCEDOTCOM.FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-version-update.xml update-build-version
                         eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM.APIS% -Dforcedotcom.ui=%FORCEDOTCOM.UI% -Dforcedotcom.feature=%FORCEDOTCOM.FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-version-update.xml update-versions-pom
                         eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM.APIS% -Dforcedotcom.ui=%FORCEDOTCOM.UI% -Dforcedotcom.feature=%FORCEDOTCOM.FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-version-update.xml update-versions-manifest
-                        
-                        
-                        
                 '''
                 try {
                         bat '''
@@ -57,13 +59,17 @@ node{
                                 eclipsec.exe -nosplash -clean -application org.eclipse.cdt.managedbuilder.core.headlessbuild --launcher.suppressErrors -data "C:/Provar-Workspace" -cleanBuild all
                         '''
                 } catch (exc) {
-                        echo 'TODO: doing clean build in eclipse headless mode, via CDT plugin, build project successfully but throws exit code 1, this need to '
+                        println 'TODO: doing clean build in eclipse headless mode, via CDT plugin, build project successfully but throws exit code 1, this need to '
                 }
         }
        
         stage ('Tyco Build') {
                 echo 'Building provar'
                 bat '''
+                        Set dir="C:/Users/Administrator/git/Export/"
+                        del %dir%\* /F /Q
+                        for /d %%p in (%dir%\*) Do rd /Q /S "%%p"
+                        
                         C:
                         cd C:/Users/Administrator/git/Provar/Java/com.provar.build
                         mvn clean install -Declipse.install.loc=%ECLIPSE.LOCATION%
@@ -71,15 +77,25 @@ node{
         }
         
         stage ('Trigger Smoke Test') {
-                build job: 'SmokeTest', 
-                    parameters: [
-                            [$class: 'StringParameterValue', name: 'provar.home', value: '%PROVAR.HOME%'],
-                            [$class: 'StringParameterValue', name: 'testproject.home', tag: '%TESTPROJECT.HOME%'],
-                            [$class: 'StringParameterValue', name: 'testproject.results', value: '%TESTPROJECT.RESULTS%'],
-                            [$class: 'StringParameterValue', name: 'ant.provar.jar', tag: '%ANT.PROVAR.JAR%'],
-                            [$class: 'StringParameterValue', name: 'ant.provar.bundled.jar', value: '%ANT.PROVAR.BUNDLED.JAR%'],
-                            [$class: 'StringParameterValue', name: 'ant.provar.sf.jar', value: '%ANT.PROVAR.SF.JAR%']
-                    ]
+                
+                env.ANT_PROVAR_JAR = '%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar.jar'
+                env.ANT_PROVAR_BUNDLED_JAR = '%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar-bundled.jar'
+                env.ANT_PROVAR_SF_JAR = '%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar-sf.jar'
+                
+                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: '%PROVAR.GIT.CREDENTIALS%',
+                    usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+                        bat '''
+                                C:
+                                cd C:/Automation/origin/QA_Master
+                                git pull origin
+                        '''
+                }
+                
+                bat '''
+                        C:
+                        cd C:/Automation
+                        ant -f SmokeTestBuild -Dprovar.home=%PROVAR.HOME% -Dtestproject.home=%TESTPROJECT.HOME% -Dtestproject.results=%TESTPROJECT.RESULTS% -Dant-provar-jar=%ANT_PROVAR_JAR% -Dant-provar-bundled-jar=%ANT_PROVAR_BUNDLED_JAR% -Dant-provar-sf-jar=%ANT_PROVAR_SF_JAR%
+                '''
         }
         
         stage ('Generate Installers') {
