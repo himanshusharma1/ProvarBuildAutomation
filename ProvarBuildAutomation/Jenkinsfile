@@ -7,40 +7,13 @@ node{
                 // If RESET_BUILDS_ALL_TIME is not set it will not be overridden.
                 // As soon as first build is triggred, we need to remove RESET_BUILDS_ALL_TIME, else it will keep on overridding BUILDS_ALL_TIME
                 withEnv(['RESET_BUILDS_ALL_TIME=${RESET_BUILDS_ALL_TIME}']) {
-                        env.BUILD_NUMBER = "1.9.99.06"
+                        env.BUILD_NUMBER = VersionNumber([
+                                versionNumberString :'${MAJOR.MINOR.BUILD}.${BUILDS_ALL_TIME,XX}', 
+                                overrideBuildsAllTime : '${RESET_BUILDS_ALL_TIME}',
+                                projectStartDate : '2018-11-11'
+                        ])
                 }
                 
                 println 'Provar Build Version Created: ' + env.BUILD_NUMBER
-        }
-        
-        
-        
-        stage ('Trigger Smoke Test') {
-                
-                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ProvarGitCredentials',
-                    usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
-                        bat '''
-                                C:
-                                cd C:/Automation/origin/QA_Master
-                                git pull https://%USERNAME%:%PASSWORD%@github.com/ProvarTesting/ProvarRegression.git master
-                        '''
-                }
-                
-                bat '''
-               
-                        C:
-                        cd C:/Automation/origin/QA_Master/test/ANT_SmokeTesting
-                        ant -f SmokeTestBuild.xml -Dprovar.home=%PROVAR.HOME% -Dtestproject.home=%TESTPROJECT.HOME% -Dtestproject.results=%TESTPROJECT.RESULTS% -Dant-provar-jar=%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar.jar -Dant-provar-bundled-jar=%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar-bundled.jar -Dant-provar-sf-jar=%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar-sf.jar
-                '''
-        }
-        
-        stage ('Generate Installers') {
-                println 'Creating installers for provar'
-                bat '''
-                        C:
-                        cd %NISI.COMPILER%
-                        makensis.exe C:/Users/Administrator/git/Installer/NSIS/provar_setup_win_x86_32.nsi
-                        makensis.exe C:/Users/Administrator/git/Installer/NSIS/provar_setup_win_x86_64.nsi
-                '''
         }
 }
