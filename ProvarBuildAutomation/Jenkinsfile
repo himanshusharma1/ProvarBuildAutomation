@@ -18,7 +18,7 @@ node{
         }
         
         stage ('Git Checkout') {
-                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: '${PROVAR.GIT.CREDENTIALS}',
+                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ProvarGitCredentials',
                     usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
                     bat '''
                         C:
@@ -83,7 +83,7 @@ node{
                 env.ANT_PROVAR_BUNDLED_JAR = '%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar-bundled.jar'
                 env.ANT_PROVAR_SF_JAR = '%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar-sf.jar'
                 
-                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: '%PROVAR.GIT.CREDENTIALS%',
+                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ProvarGitCredentials',
                     usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
                         bat '''
                                 C:
