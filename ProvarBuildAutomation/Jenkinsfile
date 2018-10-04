@@ -66,8 +66,7 @@ node{
         stage ('Tyco Build') {
                 echo 'Building provar'
                 bat '''
-                        Set dir="C:/Users/Administrator/git/Export/"
-                        del %dir%\* /F /Q
+                        del C:/Users/Administrator/git/Export \* /F /Q
                         for /d %%p in (%dir%\*) Do rd /Q /S "%%p"
                         
                         C:
