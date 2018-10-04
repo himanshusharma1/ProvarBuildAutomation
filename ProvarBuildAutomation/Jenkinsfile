@@ -16,9 +16,9 @@ node{
         
         
         stage ('Trigger Smoke Test') {
-                env.ANT_PROVAR_JAR = '%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar.jar'
-                env.ANT_PROVAR_BUNDLED_JAR = '%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar-bundled.jar'
-                env.ANT_PROVAR_SF_JAR = '%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar-sf.jar'
+                env.ANT_PROVAR_JAR = '${PROVAR.HOME}/plugins/com.provar.testrunner_${BUILD_NUMBER}/ant-provar.jar'
+                env.ANT_PROVAR_BUNDLED_JAR = '${PROVAR.HOME}/plugins/com.provar.testrunner_${BUILD_NUMBER}/ant-provar-bundled.jar'
+                env.ANT_PROVAR_SF_JAR = '${PROVAR.HOME}/plugins/com.provar.testrunner_${BUILD_NUMBER}/ant-provar-sf.jar'
                 
                 withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ProvarGitCredentials',
                     usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
