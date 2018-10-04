@@ -29,7 +29,7 @@ node{
                 bat '''
                
                         C:
-                        cd C/Users/Administrator/Provar/Workspace12/test/ANT
+                        cd C:/Users/Administrator/Provar/Workspace12/test/ANT
                         ant -f build.xml -Dprovar.home=%PROVAR.HOME% -Dtestproject.home=%TESTPROJECT.HOME% -Dtestproject.results=%TESTPROJECT.RESULTS% -Dant-provar-jar=%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar.jar -Dant-provar-bundled-jar=%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar-bundled.jar -Dant-provar-sf-jar=%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar-sf.jar
                 '''
         }
