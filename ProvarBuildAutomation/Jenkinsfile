@@ -18,7 +18,7 @@ node{
         }
         
         stage ('Git Checkout') {
-                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: '%PROVAR.GIT.CREDENTIALS%',
+                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: '${PROVAR.GIT.CREDENTIALS}',
                     usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
                     bat '''
                         C:
