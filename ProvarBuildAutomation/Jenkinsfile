@@ -105,5 +105,11 @@ node {
                         makensis.exe C:/Users/Administrator/git/Installer/NSIS/provar_setup_win_x86_32.nsi
                         makensis.exe C:/Users/Administrator/git/Installer/NSIS/provar_setup_win_x86_64.nsi
                 '''
+		
         }
+	
+	stage('actions'){
+		emailext body: ''' test123''',
+                to: "himanshu.sharma@provartesting.com"
+    	}
 }
