@@ -16,9 +16,6 @@ node{
         
         
         stage ('Trigger Smoke Test') {
-                env.ANT_PROVAR_JAR = '${PROVAR.HOME}/plugins/com.provar.testrunner_${BUILD_NUMBER}/ant-provar.jar'
-                env.ANT_PROVAR_BUNDLED_JAR = '${PROVAR.HOME}/plugins/com.provar.testrunner_${BUILD_NUMBER}/ant-provar-bundled.jar'
-                env.ANT_PROVAR_SF_JAR = '${PROVAR.HOME}/plugins/com.provar.testrunner_${BUILD_NUMBER}/ant-provar-sf.jar'
                 
                 withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ProvarGitCredentials',
                     usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
@@ -30,13 +27,13 @@ node{
                 }
                 
                 bat '''
-                echo %PROVAR.HOME% 
-                echo %TESTPROJECT.HOME% 
-                echo %BUILD_NUMBER%
-                 echo %ANT_PROVAR_JAR%
+               
                         C:
                         cd C:/Automation
-                        ant -f SmokeTestBuild.xml -Dprovar.home=%PROVAR.HOME% -Dtestproject.home=%TESTPROJECT.HOME% -Dtestproject.results=%TESTPROJECT.RESULTS% -Dant-provar-jar=%ANT_PROVAR_JAR% -Dant-provar-bundled-jar=%ANT_PROVAR_BUNDLED_JAR% -Dant-provar-sf-jar=%ANT_PROVAR_SF_JAR%
+                        ant -f SmokeTestBuild.xml -Dprovar.home=%PROVAR.HOME% -Dtestproject.home=%TESTPROJECT.HOME% -Dtestproject.results=%TESTPROJECT.RESULTS% 
+                        -Dant-provar-jar=%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar.jar 
+                        -Dant-provar-bundled-jar=%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar-bundled.jar
+                        -Dant-provar-sf-jar=%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar-sf.jar
                 '''
         }
         
