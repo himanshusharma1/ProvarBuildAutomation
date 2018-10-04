@@ -6,7 +6,7 @@ node{
                 // We will override the BUILDS_ALL_TIME variable by the value of environment-variable RESET_BUILDS_ALL_TIME;
                 // If RESET_BUILDS_ALL_TIME is not set it will not be overridden.
                 // As soon as first build is triggred, we need to remove RESET_BUILDS_ALL_TIME, else it will keep on overridding BUILDS_ALL_TIME
-                println '${RESET_BUILDS_ALL_TIME}'
+                echo 'Ver %RESET_BUILDS_ALL_TIME%'
                 withEnv(['RESET_BUILDS_ALL_TIME=${RESET_BUILDS_ALL_TIME}']) {
                         env.BUILD_NUMBER = VersionNumber([
                                 versionNumberString :'${MAJOR.MINOR.BUILD}.${BUILDS_ALL_TIME,XX}', 
