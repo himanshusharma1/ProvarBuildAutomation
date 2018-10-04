@@ -2,14 +2,14 @@ node{
 
         stage ('Generate Build Version') {
                 println 'Generating Provar Version, Format: {Major.Minor.Build.Revision}'
-                // REST_BUILDS_ALL_TIME WILL BE USED ONLY WHEN WE NEED TO RESET THE BUILD_ALL_TIME COUNTER.
-                // We will override the BUILDS_ALL_TIME variable by the value of environment-variable REST_BUILDS_ALL_TIME;
-                // If REST_BUILDS_ALL_TIME is not set it will not be overridden.
-                // As soon as first build is triggred, we need to remove REST_BUILDS_ALL_TIME, else it will keep on overridding BUILDS_ALL_TIME
-                withEnv(['REST_BUILDS_ALL_TIME=${REST_BUILDS_ALL_TIME}']) {
+                // RESET_BUILDS_ALL_TIME WILL BE USED ONLY WHEN WE NEED TO RESET THE BUILD_ALL_TIME COUNTER.
+                // We will override the BUILDS_ALL_TIME variable by the value of environment-variable RESET_BUILDS_ALL_TIME;
+                // If RESET_BUILDS_ALL_TIME is not set it will not be overridden.
+                // As soon as first build is triggred, we need to remove RESET_BUILDS_ALL_TIME, else it will keep on overridding BUILDS_ALL_TIME
+                withEnv(['RESET_BUILDS_ALL_TIME=${RESET_BUILDS_ALL_TIME}']) {
                         env.BUILD_NUMBER = VersionNumber([
                                 versionNumberString :'${MAJOR.MINOR.BUILD}.${BUILDS_ALL_TIME,XX}', 
-                                overrideBuildsAllTime : '${REST_BUILDS_ALL_TIME}',
+                                overrideBuildsAllTime : '${RESET_BUILDS_ALL_TIME}',
                                 projectStartDate : '2018-11-11'
                         ])
                 }
