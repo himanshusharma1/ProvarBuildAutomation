@@ -7,13 +7,12 @@ node{
                 // If RESET_BUILDS_ALL_TIME is not set it will not be overridden.
                 // As soon as first build is triggred, we need to remove RESET_BUILDS_ALL_TIME, else it will keep on overridding BUILDS_ALL_TIME
                 echo 'Ver %MAJOR.MINOR.BUILD%'
-                withEnv(['RESET_BUILDS_ALL_TIME=${RESET_BUILDS_ALL_TIME}']) {
                         env.BUILD_NUMBER = VersionNumber([
                                 versionNumberString :'${MAJOR.MINOR.BUILD}.${BUILDS_ALL_TIME,XX}', 
                                 overrideBuildsAllTime : '${RESET_BUILDS_ALL_TIME}',
                                 projectStartDate : '2018-11-11'
                         ])
-                }
+               
                 
                 println 'Provar Build Version Created: ' + env.BUILD_NUMBER
         }
