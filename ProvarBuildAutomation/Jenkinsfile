@@ -59,6 +59,15 @@ node {
                 }
         }
        
+	stage ('Run Tests') {
+                echo 'Running tests'
+                bat '''
+                        C:
+                        cd C:/Users/Administrator/git/Provar/Chrome/com.provar.chrome.IDE
+                        npm run testFromCmd
+                '''
+        }
+	
         stage ('Tyco Build') {
                 echo 'Building provar'
                 bat '''
