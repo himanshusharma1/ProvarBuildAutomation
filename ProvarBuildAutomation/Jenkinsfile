@@ -86,8 +86,8 @@ node {
                 bat '''
 	                try {
                                 C:
-                                cd C:/Automation/origin/QA_Master/test/ANT_SmokeTesting
-                                ant -f SmokeTestBuild.xml -Dprovar.home=%PROVAR.HOME% -Dtestproject.home=%TESTPROJECT.HOME% -Dtestproject.results=%TESTPROJECT.RESULTS% -Dant-provar-jar=%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar.jar -Dant-provar-bundled-jar=%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar-bundled.jar -Dant-provar-sf-jar=%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar-sf.jar
+                                cd C:/Automation
+                                ant -f SmokeTestBuild.xml -Dprovar.home=%PROVAR.HOME% -DprovarCaches=%ANT_PROVAR_CACHES% -Dtestproject.home=%TESTPROJECT.HOME% -Dtestproject.results=%TESTPROJECT.RESULTS% -Dant-provar-jar=%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar.jar -Dant-provar-bundled-jar=%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar-bundled.jar -Dant-provar-sf-jar=%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar-sf.jar
 			} catch (ex) {
 				println "Warning: Smoke test has failed."
 			}
@@ -107,9 +107,20 @@ node {
                 '''
 		
         }
+	stage('Copy Installers to dropbox') {
+		def installer32 = new File("C:/Provar-Installers/${BUILD_NUMBER}/Provar_setup_v1.9.99.06_win_32.exe")
+		def installer64 = new File("C:/Provar-Installers${BUILD_NUMBER}/Provar_setup_v1.9.99.06_win_32.exe")
+            
+		def dropbox_installer_32 = new File ("C:/Dropbox/${BUILD_NUMBER}/Provar_setup_v1.9.99.06_win_32.exe")
+		def dropbox_installer_64 = new File ("C:/Dropbox/${BUILD_NUMBER}/Provar_setup_v1.9.99.06_win_64.exe")
+
+                dropbox_installer_32 << installer32.bytes
+		dropbox_installer_64 << installer64.bytes
+	}
 	
-	stage('actions'){
-		emailext body: ''' test123''',
+	stage('Send Email'){
+		def emailBody = "Hi, \n Provar Nightly Build Created \n Buid Number: v${BUILD_NUMBER}"
+		emailext body: ''' ${emailBody} ''',
                 to: "himanshu.sharma@provartesting.com"
     	}
 }
