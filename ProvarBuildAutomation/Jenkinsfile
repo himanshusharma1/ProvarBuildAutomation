@@ -114,9 +114,13 @@ node {
 		def dropbox = new File ("C:/Dropbox")
 		def buildDirectory = new File(dropbox, "${BUILD_NUMBER}")
                 buildDirectory.mkdirs()
-                
-		java.nio.file.Files.copy(
+                java.nio.file.Files.copy(
         		installer32.toPath(),
+       			new File(buildDirectory, "Provar_setup_v1.9.99.06_win_64.exe").toPath(),
+       			java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+       			java.nio.file.StandardCopyOption.COPY_ATTRIBUTES );
+		java.nio.file.Files.copy(
+        		installer64.toPath(),
        			new File(buildDirectory, "Provar_setup_v1.9.99.06_win_64.exe").toPath(),
        			java.nio.file.StandardCopyOption.REPLACE_EXISTING,
        			java.nio.file.StandardCopyOption.COPY_ATTRIBUTES );
