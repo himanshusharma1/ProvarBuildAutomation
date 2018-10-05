@@ -26,8 +26,8 @@ node {
 	}
 	
 	stage('Send Email'){
-		def emailBody = "Hi, \n Provar Nightly Build Created \n Buid Number: v${BUILD_NUMBER}"
-		emailext body: ''' ${emailBody} ''',
-                to: "himanshu.sharma@provartesting.com"
+		emailext body: ''' Hi, \n Provar Nightly Build Created \n Buid Number: v${BUILD_NUMBER} ''',
+		subject: "Provar Build v${BUILD_NUMBER}",
+		to: "himanshu.sharma@provartesting.com"
     	}
 }
