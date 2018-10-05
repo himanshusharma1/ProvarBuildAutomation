@@ -17,7 +17,7 @@ node {
 		def buildDirectory = new File(dropbox, "${BUILD_NUMBER}")
                 buildDirectory.mkdirs()
                 
-		Files.copy(
+		java.nio.file.Files.copy(
         		installer32.toPath(),
        			new File(buildDirectory, "Provar_setup_v1.9.99.06_win_64.exe").toPath(),
        			java.nio.file.StandardCopyOption.REPLACE_EXISTING,
