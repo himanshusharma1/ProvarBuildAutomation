@@ -15,9 +15,9 @@ node {
             
 		def dropbox = new File ("C:/Dropbox")
 		def buildDirectory = new File(dropbox, "${BUILD_NUMBER}")
-                buidDirectory.mkdirs()
-                new File(buidDirectory, "Provar_setup_v1.9.99.06_win_32.exe") << installer32.bytes
-		new File(buidDirectory, "Provar_setup_v1.9.99.06_win_64.exe") << installer64.bytes
+                buildDirectory.mkdirs()
+                new File(buildDirectory, "Provar_setup_v1.9.99.06_win_32.exe") << installer32.bytes
+		new File(buildDirectory, "Provar_setup_v1.9.99.06_win_64.exe") << installer64.bytes
 		
 	}
 	
