@@ -5,11 +5,109 @@ node {
                 // We will override the BUILDS_ALL_TIME variable by the value of environment-variable RESET_BUILDS_ALL_TIME;
                 // If RESET_BUILDS_ALL_TIME is not set it will not be overridden.
                 // As soon as first build is triggred, we need to remove RESET_BUILDS_ALL_TIME, else it will keep on overridding BUILDS_ALL_TIME
-                env.BUILD_NUMBER = "1.9.99.06"
+                env.BUILD_NUMBER = VersionNumber([
+                        versionNumberString :'${MAJOR.MINOR.BUILD}.${BUILDS_ALL_TIME,XX}', 
+                        overrideBuildsAllTime : '${RESET_BUILDS_ALL_TIME}',
+                        projectStartDate : '2018-11-11'
+                ])
                 println 'Provar Build Version Created: ' + env.BUILD_NUMBER
         }
         
-        stage('Copy Installers to dropbox') {
+        stage ('Git Checkout') {
+                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ProvarGitCredentials',
+                    usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+                    bat '''
+                        C:
+                        cd C:/Users/Administrator/git/Provar
+                        
+                        echo 'Resetting release branch: release-v%MAJOR.MINOR.BUILD%'
+                        git reset --hard release-v%MAJOR.MINOR.BUILD%
+                        
+                        echo 'Pulling Provar repo'
+                        git pull "https://%USERNAME%:%PASSWORD%@github.com/pnoffke/Provar.git" release-v%MAJOR.MINOR.BUILD%
+                        
+                        cd C:/Users/Administrator/git/ProvarSF
+                        
+                        echo 'Resetting release branch: release-v%MAJOR.MINOR.BUILD%'
+                        git reset --hard release-v%MAJOR.MINOR.BUILD%
+                        
+                        echo 'Pulling ProvarSF repo'
+                        git pull "https://%USERNAME%:%PASSWORD%@github.com/pnoffke/ProvarSF.git" release-v%MAJOR.MINOR.BUILD%
+                        
+                        '''
+                }
+        }
+        
+        stage ('Update Versions') {
+                println 'Updating versions'
+                bat '''
+                        C:
+                        cd %ECLIPSE.LOCATION%
+                        
+                        eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM.APIS% -Dforcedotcom.ui=%FORCEDOTCOM.UI% -Dforcedotcom.feature=%FORCEDOTCOM.FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-version-update.xml update-build-version
+                        eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM.APIS% -Dforcedotcom.ui=%FORCEDOTCOM.UI% -Dforcedotcom.feature=%FORCEDOTCOM.FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-version-update.xml update-versions-pom
+                        eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM.APIS% -Dforcedotcom.ui=%FORCEDOTCOM.UI% -Dforcedotcom.feature=%FORCEDOTCOM.FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-version-update.xml update-versions-manifest
+                '''
+                try {
+                        bat '''
+                                C:
+                                cd %ECLIPSE.LOCATION%
+                                eclipsec.exe -nosplash -clean -application org.eclipse.cdt.managedbuilder.core.headlessbuild --launcher.suppressErrors -data "C:/Provar-Workspace" -cleanBuild all
+                        '''
+                } catch (exc) {
+                        println 'TODO: doing clean build in eclipse headless mode, via CDT plugin, build project successfully but throws exit code 1, this need to '
+                }
+        }
+       
+        stage ('Tyco Build') {
+                echo 'Building provar'
+                bat '''
+                        C:
+                        cd C:/Users/Administrator/git
+                        rmdir Export 
+                        mkdir Export
+                        
+                        C:
+                        cd C:/Users/Administrator/git/Provar/Java/com.provar.build
+                        mvn clean install -Declipse.install.loc=%ECLIPSE.LOCATION%
+                '''
+        }
+        
+        stage ('Trigger Smoke Test') {
+                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ProvarGitCredentials',
+                    usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+                        bat '''
+                                C:
+                                cd C:/Automation/origin/QA_Master
+                                git pull https://%USERNAME%:%PASSWORD%@github.com/ProvarTesting/ProvarRegression.git origin
+                        '''
+                }
+                
+                bat '''
+	                try {
+                                C:
+                                cd C:/Automation
+                                ant -f SmokeTestBuild.xml -Dprovar.home=%PROVAR.HOME% -DprovarCaches=%ANT_PROVAR_CACHES% -Dtestproject.home=%TESTPROJECT.HOME% -Dtestproject.results=%TESTPROJECT.RESULTS% -Dant-provar-jar=%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar.jar -Dant-provar-bundled-jar=%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar-bundled.jar -Dant-provar-sf-jar=%PROVAR.HOME%/plugins/com.provar.testrunner_%BUILD_NUMBER%/ant-provar-sf.jar
+			} catch (ex) {
+				println "Warning: Smoke test has failed."
+			}
+		'''
+        }
+        
+        stage ('Generate Installers') {
+                println 'Creating installers for provar'
+                bat '''
+                        C:
+                        cd C:/Provar-Installers
+                        mkdir %BUILD_NUMBER%
+                        
+                        cd %NISI.COMPILER%
+                        makensis.exe C:/Users/Administrator/git/Installer/NSIS/provar_setup_win_x86_32.nsi
+                        makensis.exe C:/Users/Administrator/git/Installer/NSIS/provar_setup_win_x86_64.nsi
+                '''
+		
+        }
+	stage('Copy Installers to dropbox') {
 		def installer32 = new File("C:/Provar-Installers/${BUILD_NUMBER}/Provar_setup_v1.9.99.06_win_32.exe")
 		def installer64 = new File("C:/Provar-Installers${BUILD_NUMBER}/Provar_setup_v1.9.99.06_win_64.exe")
             
@@ -27,7 +125,7 @@ node {
 	
 	stage('Send Email'){
 		emailext body: ''' Hi, \n Provar Nightly Build Created \n Buid Number: v${BUILD_NUMBER} ''',
-		subject: "Provar Build v${BUILD_NUMBER}",
+		subject: "Provar Build v%BUILD_NUMBER%",
 		to: "himanshu.sharma@provartesting.com"
     	}
 }
