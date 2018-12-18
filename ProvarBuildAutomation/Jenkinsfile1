@@ -68,7 +68,7 @@ node {
 		try {
                         sh '''
                                 cd ${ECLIPSE_LOCATION}
-                                ./eclipse -nosplash -clean -application org.eclipse.cdt.managedbuilder.core.headlessbuild --launcher.suppressErrors -data "%PROVAR_WORKSPACE%" -cleanBuild all
+                                ./eclipse -nosplash -clean -application org.eclipse.cdt.managedbuilder.core.headlessbuild --launcher.suppressErrors -data ${PROVAR_WORKSPACE} -cleanBuild all
                         '''
                 } catch (exc) {
                         println 'TODO: doing clean build in eclipse headless mode, via CDT plugin, build project successfully but throws exit code 1, this need to '
