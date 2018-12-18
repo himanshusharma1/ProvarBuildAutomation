@@ -17,7 +17,7 @@ node {
                 withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ProvarGitCredentials',
                     usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
                     sh '''
-                        cd /Users/provarmacmini/Development/Github/Provar
+                        cd /Users/provarbuild/Development/Github/Provar
                         
                         echo "Resetting release branch: origin/release-v${MAJOR_MINOR_BUILD}"
                         git reset --hard origin/release-v${MAJOR_MINOR_BUILD}
@@ -25,7 +25,7 @@ node {
                         echo 'Pulling Provar repo'
                         git pull "https://${USERNAME}:${PASSWORD}@github.com/pnoffke/Provar.git" release-v${MAJOR_MINOR_BUILD}
                         
-                        cd /Users/provarmacmini/Development/Github/ProvarSF
+                        cd /Users/provarbuild/Development/Github/ProvarSF
                         
                         echo "Resetting release branch: origin/release-v${MAJOR_MINOR_BUILD}"
                         git reset --hard origin/release-v${MAJOR_MINOR_BUILD}
@@ -97,7 +97,7 @@ node {
 			withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ProvarGitCredentials',
 			    usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
 				sh '''
-					cd /Users/provarmacmini/Development/Github/ProvarRegression
+					cd /Users/provarbuild/Development/Github/ProvarRegression
 					echo "Resetting ProvarRegression branch: QA_Master"
                         		git reset --hard QA_Master
 					git pull https://${USERNAME}:${PASSWORD}@github.com/ProvarTesting/ProvarRegression.git QA_Master
@@ -111,9 +111,9 @@ node {
 			
 			sh '''
 				
-				cd /Users/provarmacmini/Automation
+				cd /Users/provarbuild/Automation
 				export JAVA_HOME=$(/usr/libexec/java_home)
-				export ANT_HOME=/Users/provarmacmini/Applications/apache-ant-1.9.13
+				export ANT_HOME=/Users/provarbuild/Applications/apache-ant-1.9.13
 				export PATH=$PATH:$ANT_HOME/bin				
 				ant -f SmokeTestBuild.xml -Dprovar.home=${PROVAR_HOME} -DprovarCaches=${ANT_PROVAR_CACHES} -Dtestproject.home=${TESTPROJECT_HOME} -Dtestproject.results=${DEV_RESULTS_PATH} -Dant-provar-jar=${PROVAR_HOME}/plugins/com.provar.testrunner_${PROVAR_BUILD_NUMBER}/ant-provar.jar -Dant-provar-bundled-jar=${PROVAR_HOME}/plugins/com.provar.testrunner_${PROVAR_BUILD_NUMBER}/ant-provar-bundled.jar -Dant-provar-sf-jar=${PROVAR_HOME}/plugins/com.provar.testrunner_${PROVAR_BUILD_NUMBER}/ant-provar-sf.jar
 			'''
@@ -127,9 +127,9 @@ node {
 		
 		if(env.REVISION_FORMAT == 'XX') { //REVISION_FORMAT == XX denotes release build, installer will be copied to drop box only incase o release builds
 			
-			def installer = new File("/Users/provarmacmini/Development/Github/Provar/Installer/Mac/build/Provar_${PROVAR_BUILD_NUMBER}_macos.pkg")
+			def installer = new File("/Users/provarbuild/Development/Github/Provar/Installer/Mac/build/Provar_${PROVAR_BUILD_NUMBER}_macos.pkg")
 			
-			def dropbox = new File ("/Users/provarmacmini/Dropbox/Provar-Automation")
+			def dropbox = new File ("/Users/provarbuild/Dropbox/Provar-Automation")
 			def buildDirectory = new File(dropbox, "${PROVAR_BUILD_NUMBER}")
 			buildDirectory.mkdirs()
 			
