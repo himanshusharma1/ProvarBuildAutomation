@@ -79,14 +79,14 @@ node {
 	stage ('Tyco Build') {
                 echo 'Building provar'
                 sh '''
-                        rm -rf /Users/provarmacmini/Development/Github/Export 
-                        cd /Users/provarmacmini/Development/Github
+                        rm -rf /Users/provarbuild/Development/Github/Export 
+                        cd /Users/provarbuild/Development/Github
 			mkdir Export
                         
                        
-                        cd /Users/provarmacmini/Development/Github/Provar/Java/com.provar.build
+                        cd /Users/provarbuild/Development/Github/Provar/Java/com.provar.build
 			export JAVA_HOME=$(/usr/libexec/java_home)
-			export M2_HOME=/Users/provarmacmini/apache-maven-3.0.5
+			export M2_HOME=/Users/provarbuild/apache-maven-3.0.5
 			export PATH=$PATH:$M2_HOME/bin                        
 			mvn clean install -Declipse.install.loc=${ECLIPSE_PLUGINS_LOCATION}
                 '''
