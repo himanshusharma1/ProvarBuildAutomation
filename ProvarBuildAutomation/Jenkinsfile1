@@ -23,7 +23,7 @@ node {
                         git reset --hard origin/release-v${MAJOR_MINOR_BUILD}
                         
                         echo 'Pulling Provar repo'
-                        git pull "https://${USERNAME}:${PASSWORD}@github.com/pnoffke/Provar.git" release-v${MAJOR_MINOR_BUILD}
+                        git pull "https://${USERNAME}:${PASSWORD}@github.com/pnoffke/Provar.git" origin/release-v${MAJOR_MINOR_BUILD}
                         
                         cd /Users/provarbuild/Development/Github/ProvarSF
                         
@@ -31,7 +31,7 @@ node {
                         git reset --hard origin/release-v${MAJOR_MINOR_BUILD}
                         
                         echo 'Pulling ProvarSF repo'
-                        git pull "https://${USERNAME}:${PASSWORD}@github.com/pnoffke/ProvarSF.git" release-v${MAJOR_MINOR_BUILD}
+                        git pull "https://${USERNAME}:${PASSWORD}@github.com/pnoffke/ProvarSF.git" origin/release-v${MAJOR_MINOR_BUILD}
                         
                         '''
                 }
