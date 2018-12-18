@@ -93,6 +93,7 @@ node {
         }
 	 try {
 		stage ('Trigger Smoke Test') {
+		if(!env.SKIP_SMOKE_TEST) {
 			withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ProvarGitCredentials',
 			    usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
 				sh '''
@@ -116,6 +117,7 @@ node {
 				export PATH=$PATH:$ANT_HOME/bin				
 				ant -f SmokeTestBuild.xml -Dprovar.home=${PROVAR_HOME} -DprovarCaches=${ANT_PROVAR_CACHES} -Dtestproject.home=${TESTPROJECT_HOME} -Dtestproject.results=${DEV_RESULTS_PATH} -Dant-provar-jar=${PROVAR_HOME}/plugins/com.provar.testrunner_${PROVAR_BUILD_NUMBER}/ant-provar.jar -Dant-provar-bundled-jar=${PROVAR_HOME}/plugins/com.provar.testrunner_${PROVAR_BUILD_NUMBER}/ant-provar-bundled.jar -Dant-provar-sf-jar=${PROVAR_HOME}/plugins/com.provar.testrunner_${PROVAR_BUILD_NUMBER}/ant-provar-sf.jar
 			'''
+		}
 		}
 	} catch (ex) {
 		println "WARNING: Smoke test failed."
