@@ -1,0 +1,161 @@
+node {
+        stage ('Generate Build Version') {
+                println 'Generating Provar Version, Format: {Major.Minor.Build.Revision}'
+                // RESET_BUILDS_ALL_TIME WILL BE USED ONLY WHEN WE NEED TO RESET THE BUILD_ALL_TIME COUNTER.
+                // We will override the BUILDS_ALL_TIME variable by the value of environment-variable RESET_BUILDS_ALL_TIME;
+                // If RESET_BUILDS_ALL_TIME is not set it will not be overridden.
+                // As soon as first build is triggred, we need to remove RESET_BUILDS_ALL_TIME, else it will keep on overridding BUILDS_ALL_TIME
+                env.PROVAR_BUILD_NUMBER = VersionNumber([
+			versionNumberString :'${MAJOR_MINOR_BUILD}.${BUILDS_ALL_TIME,${REVISION_FORMAT}}', 
+                        overrideBuildsAllTime : '${RESET_BUILDS_ALL_TIME}',
+                        projectStartDate : '2018-10-08'
+                ])
+                println 'Provar Build Version Created: ' + env.PROVAR_BUILD_NUMBER
+        }
+        
+        stage ('Git Checkout') {
+                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ProvarGitCredentials',
+                    usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+                    sh '''
+                        cd /Users/provarmacmini/Development/Github/Provar
+                        
+                        echo "Resetting release branch: origin/release-v${MAJOR_MINOR_BUILD}"
+                        git reset --hard origin/release-v${MAJOR_MINOR_BUILD}
+                        
+                        echo 'Pulling Provar repo'
+                        git pull "https://${USERNAME}:${PASSWORD}@github.com/pnoffke/Provar.git" release-v${MAJOR_MINOR_BUILD}
+                        
+                        cd /Users/provarmacmini/Development/Github/ProvarSF
+                        
+                        echo "Resetting release branch: origin/release-v${MAJOR_MINOR_BUILD}"
+                        git reset --hard origin/release-v${MAJOR_MINOR_BUILD}
+                        
+                        echo 'Pulling ProvarSF repo'
+                        git pull "https://${USERNAME}:${PASSWORD}@github.com/pnoffke/ProvarSF.git" release-v${MAJOR_MINOR_BUILD}
+                        
+                        '''
+                }
+        }
+        
+        stage ('Update Versions') {
+                println 'Updating versions'
+		
+                sh '''
+                        cd ${ECLIPSE_LOCATION}
+                        ./eclipse -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=${PROVAR_BUILD_NUMBER} -Dforcedotcom.apis=${FORCEDOTCOM_APIS} -Dforcedotcom.ui=${FORCEDOTCOM_UI} -Dforcedotcom.feature=${FORCEDOTCOM_FEATURE} -f ${PROVAR_BUILD_SCRIPT_PATH}/ant-version-update.xml update-build-version
+                '''
+		sleep(time:5,unit:"SECONDS")
+		sh '''
+                        cd ${ECLIPSE_LOCATION}
+			./eclipse -nosplash -application org.eclipse.ant.core.antRunner -Dp2.location=${P2_LOCATION} -Dbuild.version=${PROVAR_BUILD_NUMBER} -Dforcedotcom.apis=${FORCEDOTCOM_APIS} -Dforcedotcom.ui=${FORCEDOTCOM_UI} -Dforcedotcom.feature=${FORCEDOTCOM_FEATURE} -f ${PROVAR_BUILD_SCRIPT_PATH}/ant-version-update.xml update-p2-location
+		'''
+		sleep(time:5,unit:"SECONDS")
+		sh '''
+                        cd ${ECLIPSE_LOCATION}
+			./eclipse -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=${PROVAR_BUILD_NUMBER} -Dforcedotcom.apis=${FORCEDOTCOM_APIS} -Dforcedotcom.ui=${FORCEDOTCOM_UI} -Dforcedotcom.feature=${FORCEDOTCOM_FEATURE} -f ${PROVAR_BUILD_SCRIPT_PATH}/ant-version-update.xml update-p2-repo
+		'''
+		sleep(time:5,unit:"SECONDS")
+		sh '''
+                        cd ${ECLIPSE_LOCATION}
+			./eclipse -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=${PROVAR_BUILD_NUMBER} -Dforcedotcom.apis=${FORCEDOTCOM_APIS} -Dforcedotcom.ui=${FORCEDOTCOM_UI} -Dforcedotcom.feature=${FORCEDOTCOM_FEATURE} -f ${PROVAR_BUILD_SCRIPT_PATH}/ant-version-update.xml update-versions-pom
+		'''
+		sleep(time:5,unit:"SECONDS")
+		sh '''
+                        cd ${ECLIPSE_LOCATION}
+			./eclipse -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=${PROVAR_BUILD_NUMBER} -Dforcedotcom.apis=${FORCEDOTCOM_APIS} -Dforcedotcom.ui=${FORCEDOTCOM_UI} -Dforcedotcom.feature=${FORCEDOTCOM_FEATURE} -f ${PROVAR_BUILD_SCRIPT_PATH}/ant-version-update.xml update-versions-manifest
+                '''
+		sleep(time:5,unit:"SECONDS")
+		try {
+                        sh '''
+                                cd ${ECLIPSE_LOCATION}
+                                ./eclipse -nosplash -clean -application org.eclipse.cdt.managedbuilder.core.headlessbuild --launcher.suppressErrors -data "/Users/provarmacmini/Development/Workspaces/Provar-Build-Automation" -cleanBuild all
+                        '''
+                } catch (exc) {
+                        println 'TODO: doing clean build in eclipse headless mode, via CDT plugin, build project successfully but throws exit code 1, this need to '
+                	sleep(time:5,unit:"SECONDS")
+		}
+        }
+       
+	stage ('Tyco Build') {
+                echo 'Building provar'
+                sh '''
+                        rm -rf /Users/provarmacmini/Development/Github/Export 
+                        cd /Users/provarmacmini/Development/Github
+			mkdir Export
+                        
+                       
+                        cd /Users/provarmacmini/Development/Github/Provar/Java/com.provar.build
+			export JAVA_HOME=$(/usr/libexec/java_home)
+			export M2_HOME=/Users/provarmacmini/apache-maven-3.0.5
+			export PATH=$PATH:$M2_HOME/bin                        
+			mvn clean install -Declipse.install.loc=${ECLIPSE_PLUGINS_LOCATION}
+                '''
+        }
+	 try {
+		stage ('Trigger Smoke Test') {
+			withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ProvarGitCredentials',
+			    usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+				sh '''
+					cd /Users/provarmacmini/Development/Github/ProvarRegression
+					echo "Resetting ProvarRegression branch: QA_Master"
+                        		git reset --hard QA_Master
+					git pull https://${USERNAME}:${PASSWORD}@github.com/ProvarTesting/ProvarRegression.git QA_Master
+				'''
+			}
+			
+			def devbuildResultsFolder = new File ("${TESTPROJECT_RESULTS}")
+			def resultsDirectory = new File(devbuildResultsFolder, "${PROVAR_BUILD_NUMBER}")
+			resultsDirectory.mkdirs()
+			env.DEV_RESULTS_PATH = resultsDirectory.getAbsolutePath() + '/Results'
+			
+			sh '''
+				
+				cd /Users/provarmacmini/Automation
+				export JAVA_HOME=$(/usr/libexec/java_home)
+				export ANT_HOME=/Users/provarmacmini/Applications/apache-ant-1.9.13
+				export PATH=$PATH:$ANT_HOME/bin				
+				ant -f SmokeTestBuild.xml -Dprovar.home=${PROVAR_HOME} -DprovarCaches=${ANT_PROVAR_CACHES} -Dtestproject.home=${TESTPROJECT_HOME} -Dtestproject.results=${DEV_RESULTS_PATH} -Dant-provar-jar=${PROVAR_HOME}/plugins/com.provar.testrunner_${PROVAR_BUILD_NUMBER}/ant-provar.jar -Dant-provar-bundled-jar=${PROVAR_HOME}/plugins/com.provar.testrunner_${PROVAR_BUILD_NUMBER}/ant-provar-bundled.jar -Dant-provar-sf-jar=${PROVAR_HOME}/plugins/com.provar.testrunner_${PROVAR_BUILD_NUMBER}/ant-provar-sf.jar
+			'''
+		}
+	} catch (ex) {
+		println "WARNING: Smoke test failed."
+	}
+        
+	stage('Copy Installers to dropbox') {
+		
+		if(env.REVISION_FORMAT == 'XX') { //REVISION_FORMAT == XX denotes release build, installer will be copied to drop box only incase o release builds
+			
+			def installer = new File("/Users/provarmacmini/Development/Github/Provar/Installer/Mac/build/Provar_${PROVAR_BUILD_NUMBER}_macos.pkg")
+			
+			def dropbox = new File ("/Users/provarmacmini/Dropbox/Provar-Automation")
+			def buildDirectory = new File(dropbox, "${PROVAR_BUILD_NUMBER}")
+			buildDirectory.mkdirs()
+			
+			java.nio.file.Files.copy(
+				installer.toPath(),
+				new File(buildDirectory, "Provar_${PROVAR_BUILD_NUMBER}_macos.pkg").toPath(),
+				java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+				java.nio.file.StandardCopyOption.COPY_ATTRIBUTES );
+		} else {
+			println 'Dev Build: Skipping copy installer to dropbox'
+		}
+		
+	}
+	
+	stage('Send Email') {
+		if(env.SEND_MAIL == 'true') {
+			def resultsFilePath = env.DEV_RESULTS_PATH + '/Overview.html'
+			def fileContents = new File(resultsFilePath).text
+			def smokeResult =  fileContents.substring(fileContents.lastIndexOf('<table class=\'Details\'>').toInteger(), fileContents.lastIndexOf('</table>').toInteger())
+			def emailBody = 'Hi,\n Provar Nightly Build(Mac) Created.\n Smoke Test Result: ' + smokeResult
+
+			if(env.REVISION_FORMAT == 'XX') {
+				emailBody += '\n Dropbox (ETA: 20 min): https://www.dropbox.com/sh/h6jqpxhro1fgpzt/AACZ1EVvU4HNoQVQ9RClhi6Sa?dl=0 '
+			}
+
+			emailext body: emailBody,
+				subject: "Provar Nightly Build(Mac) v${PROVAR_BUILD_NUMBER}",
+				to: "build.automation@provartesting.com"
+		}
+	}
+}
