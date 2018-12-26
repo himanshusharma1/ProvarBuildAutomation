@@ -1,0 +1,388 @@
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+node {
+	def summary = ""
+	def currentBuildStatus = "SUCCESSFUL" // default buid status set to SUCCESSFUL
+	
+	if(env.REVISION_FORMAT == 'XX' || env.REVISION_FORMAT == 'XXX') {
+		env.CURRENT_BRANCH = "release-v${MAJOR_MINOR_BUILD}"
+	} else if(env.REVISION_FORMAT == 'XXXX') {
+		env.CURRENT_BRANCH = "${BETA_BRANCH}"
+	}
+	println 'Current branch set to : ' + env.CURRENT_BRANCH
+	
+	try {
+		// Generation of build version number is only required in case of dev and release builds
+		// For beta builds, user provided build version number manually
+		if(env.REVISION_FORMAT == 'XX' || env.REVISION_FORMAT == 'XXX') {
+			stage ('Generate Build Version') {
+
+				// Vesrion Number Format: {Major.Minor.Build.Revision}'
+				// RESET_BUILDS_ALL_TIME WILL BE USED ONLY WHEN WE NEED TO RESET THE BUILD_ALL_TIME COUNTER.
+				// We will override the BUILDS_ALL_TIME variable by the value of environment-variable RESET_BUILDS_ALL_TIME;
+				// If RESET_BUILDS_ALL_TIME is not set it will not be overridden.
+				// As soon as first build is triggred, we need to remove RESET_BUILDS_ALL_TIME, else it will keep on overridding BUILDS_ALL_TIME
+				env.PROVAR_BUILD_NUMBER = VersionNumber([
+					versionNumberString :'${MAJOR_MINOR_BUILD}.${BUILDS_ALL_TIME,${REVISION_FORMAT}}', 
+					overrideBuildsAllTime : '${RESET_BUILDS_ALL_TIME}',
+					projectStartDate : '2018-10-08'
+				])
+				println 'Provar Build Version Created: ' + env.PROVAR_BUILD_NUMBER
+
+			}
+		}
+
+		stage('Notify Build Trigger') {
+			//Send notification to slack about start of build.
+			sendSlackNotification('STARTED')
+
+		}
+		
+		if(env.SWITCHING_BRANCH_REQUIRED == "Yes") {
+			stage ('Switch Git Branch') {
+				try {
+					withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ProvarGitCredentials',
+						usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+						bat '''
+							C:
+							cd %PROVAR_REPO_LOCATION%/Provar
+							git reset --hard
+							git checkout -b %CURRENT_BRANCH%
+							
+							
+							cd %PROVAR_REPO_LOCATION%/ProvarSF
+							git reset --hard
+							git checkout -b %CURRENT_BRANCH%
+							
+						'''
+					}
+				} catch (e) {
+					summary += "Failed to switch on required branch. ABORTING build. Reason: " + e.getMessage()
+					throw e
+				}
+			}
+		
+		} else {
+			println "SWITCHING_BRANCH_REQUIRED is set to No, Skipping switch to branch stage"
+		}
+		
+		stage ('Git Checkout') {
+			try {
+				
+				withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ProvarGitCredentials',
+					usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+					bat '''
+						C:
+						cd %PROVAR_REPO_LOCATION%/Provar
+						git reset --hard %CURRENT_BRANCH%
+						git pull "https://%USERNAME%:%PASSWORD%@github.com/pnoffke/Provar.git" %CURRENT_BRANCH%
+
+						cd %PROVAR_REPO_LOCATION%/ProvarSF
+						git reset --hard %CURRENT_BRANCH%
+						git pull "https://%USERNAME%:%PASSWORD%@github.com/pnoffke/ProvarSF.git" %CURRENT_BRANCH%
+					'''
+				}
+			} catch (e) {
+				summary += "Failed to do git checkout. ABORTING build. Reason: " + e.getMessage()
+				throw e
+			}
+		}
+
+		stage ('Update Versions') {
+			try {
+				bat '''
+					C:
+					cd %ECLIPSE_LOCATION%
+					eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%PROVAR_BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM_APIS% -Dforcedotcom.ui=%FORCEDOTCOM_UI% -Dforcedotcom.feature=%FORCEDOTCOM_FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-version-update.xml update-build-version
+					eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dp2.location=%P2_LOCATION% -Dbuild.version=%PROVAR_BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM_APIS% -Dforcedotcom.ui=%FORCEDOTCOM_UI% -Dforcedotcom.feature=%FORCEDOTCOM_FEATURE% -Dprovar.repository.location=%PROVAR_REPO_LOCATION% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-version-update.xml update-p2-location
+					eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%PROVAR_BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM_APIS% -Dforcedotcom.ui=%FORCEDOTCOM_UI% -Dforcedotcom.feature=%FORCEDOTCOM_FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-version-update.xml update-p2-repo
+					eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%PROVAR_BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM_APIS% -Dforcedotcom.ui=%FORCEDOTCOM_UI% -Dforcedotcom.feature=%FORCEDOTCOM_FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-version-update.xml update-versions-pom
+					eclipsec -nosplash -application org.eclipse.ant.core.antRunner -Dbuild.version=%PROVAR_BUILD_NUMBER% -Dforcedotcom.apis=%FORCEDOTCOM_APIS% -Dforcedotcom.ui=%FORCEDOTCOM_UI% -Dforcedotcom.feature=%FORCEDOTCOM_FEATURE% -f %PROVAR_BUILD_SCRIPT_PATH%/ant-version-update.xml update-versions-manifest
+				'''
+			} catch (e) {
+				summary += "Failed to update version numbers. ABORTING build. Reason: " + e.getMessage()
+				throw e
+			}
+		}
+
+		stage ('Clean Build Workspace') {
+
+			try {
+				bat '''
+					C:
+					cd %ECLIPSE_LOCATION%
+					eclipsec.exe -nosplash -clean -application org.eclipse.cdt.managedbuilder.core.headlessbuild --launcher.suppressErrors -data "%PROVAR_WORKSPACE%" -cleanBuild all
+				'''
+			} catch (exc) {
+				println 'TODO: doing clean build in eclipse headless mode, via CDT plugin, build project successfully but throws exit code 1 [This needs to be fixed]'
+			}
+			
+		}
+		try {
+			stage ('Tyco Build') {
+				bat '''
+					C:
+					cd %PROVAR_REPO_LOCATION%
+					rmdir /s /q Export 
+					mkdir Export
+					C:
+					cd %PROVAR_REPO_LOCATION%/Provar/Java/com.provar.build
+					mvn clean install -Declipse.install.loc=%ECLIPSE_LOCATION%
+				'''
+			}
+		} catch (e) {
+				summary += "TYCO build failed. ABORTING build. Reason: " + e.getMessage()
+				throw e
+		}
+
+		if(env.SKIP_SMOKE_TESTS == "No") {
+			try {
+				stage ('Trigger Smoke Test') {
+					withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ProvarGitCredentials',
+						usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+						bat '''
+							C:
+							cd %PROVAR_REPO_LOCATION%/ProvarRegression
+							git pull https://%USERNAME%:%PASSWORD%@github.com/ProvarTesting/ProvarRegression.git QA_Master
+						'''
+					}
+
+					def buildResultsFolder = new File ("${TESTPROJECT_RESULTS}")
+					def resultsDirectory = new File(buildResultsFolder, "${PROVAR_BUILD_NUMBER}")
+					resultsDirectory.mkdirs()
+					env.DEV_RESULTS_PATH = resultsDirectory.getAbsolutePath() + '/Results'
+
+					bat '''
+						C:
+						cd C:/Automation
+						ant -f SmokeTestBuild.xml -Dprovar.home=%PROVAR_HOME% -DprovarCaches=%ANT_PROVAR_CACHES% -Dtestproject.home=%TESTPROJECT_HOME% -Dtestproject.results=%DEV_RESULTS_PATH% -Dant-provar-jar=%PROVAR_HOME%/plugins/com.provar.testrunner_%PROVAR_BUILD_NUMBER%/ant-provar.jar -Dant-provar-bundled-jar=%PROVAR_HOME%/plugins/com.provar.testrunner_%PROVAR_BUILD_NUMBER%/ant-provar-bundled.jar -Dant-provar-sf-jar=%PROVAR_HOME%/plugins/com.provar.testrunner_%PROVAR_BUILD_NUMBER%/ant-provar-sf.jar
+					'''
+
+					summary += "Smoke Test Result.\n"
+					summary += getSmokeTestResults()
+				}
+			} catch (e) {
+				summary += "Smoke Test Failed. Reason: " + e.getMessage()
+				println "WARNING: Smoke test failed."
+			}
+		}
+
+		stage ('Generate Installers') {
+
+			try {
+				bat '''
+					C:
+					cd C:/Provar-Installers
+					mkdir %PROVAR_BUILD_NUMBER%
+					
+					cd %NISI_COMPILER%
+					makensis.exe %PROVAR_REPO_LOCATION%/Provar/Installer/NSIS/provar_setup_win_x86_32.nsi
+					makensis.exe %PROVAR_REPO_LOCATION%/Provar/Installer/NSIS/provar_setup_win_x86_64.nsi
+				'''
+			} catch (e) {
+				summary += "\n Failed to create installers. ABORTING build. Reason: " + e.getMessage()
+				println "ERROR: Failed to create provar installer."
+				throw e
+			}
+
+			if(env.CREATE_UPDATERS == "Yes") {
+				try {
+					bat '''
+						cd %NISI_COMPILER%
+						makensis.exe %PROVAR_REPO_LOCATION%/Provar/Installer/NSIS/provar_update_win_x86_32.nsi
+						makensis.exe %PROVAR_REPO_LOCATION%/Provar/Installer/NSIS/provar_update_win_x86_64.nsi
+					'''
+				} catch (e) {
+					summary += "\n Failed to create updaters. Reason: " + e.getMessage()
+					println "WARNING: Failed to create provar updaters."
+				}
+			}
+
+		}
+
+		stage('Copy Installers to dropbox') {
+
+			if(env.REVISION_FORMAT == 'XX') { //REVISION_FORMAT == XX denotes release build, installer will be copied to drop box only incase o release builds
+				
+				def dropbox = new File ("C:/Dropbox/Provar-Automation")
+				def buildDirectory = new File(dropbox, "${PROVAR_BUILD_NUMBER}")
+				buildDirectory.mkdirs()
+				
+				try {
+					def installer32 = new File("C:/Provar-Installers/${PROVAR_BUILD_NUMBER}/Provar_setup_v${PROVAR_BUILD_NUMBER}_win_32.exe")
+					def installer64 = new File("C:/Provar-Installers/${PROVAR_BUILD_NUMBER}/Provar_setup_v${PROVAR_BUILD_NUMBER}_win_64.exe")
+
+					def antZip = new File("${PROVAR_REPO_LOCATION}/Export/ANT/Provar_ANT_${PROVAR_BUILD_NUMBER}.zip")
+
+					java.nio.file.Files.copy(
+						installer32.toPath(),
+						new File(buildDirectory, "Provar_setup_v${PROVAR_BUILD_NUMBER}_win_32.exe").toPath(),
+						java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+						java.nio.file.StandardCopyOption.COPY_ATTRIBUTES );
+
+					java.nio.file.Files.copy(
+						installer64.toPath(),
+						new File(buildDirectory, "Provar_setup_v${PROVAR_BUILD_NUMBER}_win_64.exe").toPath(),
+						java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+						java.nio.file.StandardCopyOption.COPY_ATTRIBUTES );
+
+					java.nio.file.Files.copy(
+						antZip.toPath(),
+						new File(buildDirectory, "Provar_ANT_${PROVAR_BUILD_NUMBER}.zip").toPath(),
+						java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+						java.nio.file.StandardCopyOption.COPY_ATTRIBUTES );
+				} catch (e) {
+					summary += "\n Failed to copy installers to dropbox. Reason: " + e.getMessage()
+					println "Error while creating Installers: provar updater not uploded to dropbox."
+				}	
+
+				if(env.CREATE_UPDATERS == "Yes") {
+					try {
+						def updater32 = new File("C:/Provar-Installers/${PROVAR_BUILD_NUMBER}/Provar_update_v${PROVAR_BUILD_NUMBER}_win_32.exe")
+						def updater64 = new File("C:/Provar-Installers/${PROVAR_BUILD_NUMBER}/Provar_update_v${PROVAR_BUILD_NUMBER}_win_64.exe")
+
+						java.nio.file.Files.copy(
+						updater32.toPath(),
+						new File(buildDirectory, "Provar_update_v${PROVAR_BUILD_NUMBER}_win_32.exe").toPath(),
+						java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+						java.nio.file.StandardCopyOption.COPY_ATTRIBUTES );
+
+						java.nio.file.Files.copy(
+						updater64.toPath(),
+						new File(buildDirectory, "Provar_update_v${PROVAR_BUILD_NUMBER}_win_64.exe").toPath(),
+						java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+						java.nio.file.StandardCopyOption.COPY_ATTRIBUTES );
+					} catch (e) {
+						summary += "\n Failed to copy updaters to dropbox. Reason: " + e.getMessage()
+						println "Error while creating Updaters: provar updater not uploded to dropbox."
+					}
+				}
+			} else {
+				println 'Dev Build: Skipping copy installer to dropbox'
+			}
+
+		}
+
+		stage("Create Tags") {
+
+			if(env.REVISION_FORMAT == 'XX') {
+				withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ProvarGitCredentials',
+					usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+					bat '''
+						C:
+						cd %PROVAR_REPO_LOCATION%/Provar
+						git tag tag-v%PROVAR_BUILD_NUMBER%
+						git push "https://%USERNAME%:%PASSWORD%@github.com/pnoffke/Provar.git" tag-v%PROVAR_BUILD_NUMBER%
+						C:
+						cd %PROVAR_REPO_LOCATION%/ProvarSF
+						git tag tag-v%PROVAR_BUILD_NUMBER%
+						git push "https://%USERNAME%:%PASSWORD%@github.com/pnoffke/ProvarSF.git" tag-v%PROVAR_BUILD_NUMBER%
+					'''
+				}
+			}
+
+		}
+
+	} catch (e) {
+		currentBuildStatus = "FAILED"
+		throw e
+	}
+	finally {
+		stage("Send Notifications") {
+
+			sendSlackNotification(currentBuildStatus, summary)
+			if(env.SEND_MAIL == 'Yes' && currentBuildStatus == 'SUCCESSFUL') {
+				sendEmailNotification()
+			}
+
+		}
+	}
+}
+
+def sendEmailNotification() {
+	def emailBody = ""
+	def recepient = ""
+
+	if(env.REVISION_FORMAT == 'XX') {
+		emailBody = 'Hi,\n Provar release build was created successfully.\nSmoke Test Result:\n' + getSmokeTestResults() + '\nPlease refer Jira for more details' 
+		emailBody += '\n Dropbox (ETA: 20 min): https://www.dropbox.com/sh/h6jqpxhro1fgpzt/AACZ1EVvU4HNoQVQ9RClhi6Sa?dl=0 '
+		recepient = "build.automation@provartesting.com"
+	}
+	
+	if(env.REVISION_FORMAT == 'XXX') {
+		emailBody = 'Hi,\n Provar nightly build was created successfully.\nSmoke Test Result:\n' + getSmokeTestResults() 
+		recepient = "devteam@provartesting.com"
+	}
+
+	if(env.REVISION_FORMAT == 'XXXX') {
+		emailBody = 'Hi,\n Provar beta build was created successfully.\nSmoke Test Result:\n' + getSmokeTestResults() + '\nPlease refer Jira for more details' 
+		recepient = "build.automation@provartesting.com"
+	}
+
+	if(env.BUILD_NOTES != "N/A") {
+		emailBody += "Build Notes: " + env.BUILD_NOTES
+	}
+	//Sending mail via email ext plugin
+	emailext body: emailBody,
+	subject: "Provar Build v${PROVAR_BUILD_NUMBER}",
+	to: recepient
+}
+
+def sendSlackNotification(String currentBuildStatus = 'STARTED', String summary) {
+	// build status of null means successful
+	currentBuildStatus =  currentBuildStatus ?: 'SUCCESSFUL'
+	def buildNotes = env.BUILD_NOTES != "N/A" ? "\n" + env.BUILD_NOTES : "";
+	def subject = "Build Status: " + currentBuildStatus + " Job: " + env.JOB_NAME + "[" + env.PROVAR_BUILD_NUMBER +"]"
+	
+	if (currentBuildStatus == 'STARTED') {
+		slackSend (color: "#00FF00", message: subject)
+	} else if (currentBuildStatus == 'SUCCESSFUL') {
+		if(env.REVISION_FORMAT == 'XX') {
+			def dropboxlink = "\n Dropbox (ETA: 20 min): https://www.dropbox.com/sh/h6jqpxhro1fgpzt/AACZ1EVvU4HNoQVQ9RClhi6Sa?dl=0";
+			slackSend (color: "#00FF00", message: subject + "\n" + summary + dropboxlink + buildNotes)
+		} else {
+			slackSend (color: "#00FF00", message: subject + "\n" + summary)
+		}
+		
+	} else {
+		slackSend (color: "#FF0000", message: subject + "\n" + summary)
+	}
+}
+
+def getSmokeTestResults() {
+	try {
+		if(env.SKIP_SMOKE_TESTS == "Yes" ){
+			return "No results available as skip smoke tests was opted for this build."
+		}
+		def resultsFilePath = env.DEV_RESULTS_PATH + '/Overview.html'
+		def fileContents = new File(resultsFilePath).text
+		def smokeResult =  fileContents.substring(fileContents.lastIndexOf('<table class=\'Details\'>').toInteger(), fileContents.lastIndexOf('</table>').toInteger())
+		return extractSmokeTestResults(smokeResult);
+	} catch (e) {
+		println 'Failed to read smoke test results from disk. This might be because smoke test failed or required file is not present at specified location'
+		return e.getMessage()
+	}
+}
+
+def extractSmokeTestResults(String html) {
+	def result = "";
+	int i = 0;
+	def pattern = "(?<=.>)(([a-z].*?|[A-Z].*?|[0-9].*?):?)(?=<.td>)";
+
+	try {
+		Pattern r = Pattern.compile(pattern);
+		Matcher m = r.matcher(html);
+		while(m.find()) {
+			result += m.group(0);
+			if(i == 1) {
+				i = -1
+				result += "\n"
+			}
+			i++;
+		}
+	} catch (e) {
+		return null;
+	}
+	return result;
+}
