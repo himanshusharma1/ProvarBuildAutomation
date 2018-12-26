@@ -35,7 +35,7 @@ node {
 
 		stage('Notify Build Trigger') {
 			//Send notification to slack about start of build.
-			sendSlackNotification('STARTED')
+			//sendSlackNotification('STARTED')
 
 		}
 		
@@ -291,7 +291,7 @@ node {
 	finally {
 		stage("Send Notifications") {
 
-			sendSlackNotification(currentBuildStatus, summary)
+			//sendSlackNotification(currentBuildStatus, summary)
 			if(env.SEND_MAIL == 'Yes' && currentBuildStatus == 'SUCCESSFUL') {
 				sendEmailNotification()
 			}
