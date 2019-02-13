@@ -1,0 +1,12 @@
+import groovy.xml.MarkupBuilder 
+import groovy.util.*
+node {
+    stage ('Read Results') {
+      def doc = parser.parse("C:\Users\Administrator\git\Provar\Chrome\com.provar.chrome.IDE\target\build\spec\report\junit.xml");
+      doc.testsuites.testsuite.each{
+         bk->
+         print(" Name:")
+         println "${bk['@name']}"
+			}
+    }
+ }
