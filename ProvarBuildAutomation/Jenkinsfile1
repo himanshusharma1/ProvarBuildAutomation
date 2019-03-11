@@ -127,7 +127,7 @@ node {
 		
 		if(env.REVISION_FORMAT == 'XX') { //REVISION_FORMAT == XX denotes release build, installer will be copied to drop box only incase o release builds
 			
-			def installer = new File("/Users/provarbuild/Development/Github/Provar/Installer/Mac/build/Provar_${PROVAR_BUILD_NUMBER}_macos.pkg")
+			def installer = new File("/Users/provarbuild/Development/Github/Provar/Installer/Mac/build/Provar_${PROVAR_BUILD_NUMBER}_macos_signed.pkg")
 			
 			def dropbox = new File ("/Users/provarbuild/Dropbox/Provar-Automation")
 			def buildDirectory = new File(dropbox, "${PROVAR_BUILD_NUMBER}")
